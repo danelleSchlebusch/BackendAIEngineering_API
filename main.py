@@ -56,12 +56,20 @@
 # async def read_file(file_path: str):
 #     return {"file_path": file_path}
 
+#------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------
+#Initialization
+#-------------------------------------------------------------------
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+app = FastAPI()
+
+
 #------------------------------------------------------------------
 #Stage 1: Your first real endpoint
 #------------------------------------------------------------------
-from fastapi import FastAPI
-
-app = FastAPI()
 
 @app.get("/")
 def root():
@@ -87,10 +95,6 @@ def about():
 #-----------------------------------------------------------------
 #Stage 2: Read: list and a single task
 #-----------------------------------------------------------------
-
-from fastapi import FastAPI, HTTPException
-
-app = FastAPI()
 
 tasks = [
     {
@@ -128,3 +132,30 @@ def get_task(task_id: int):
         status_code = 404,
         detail = f"Task {task_id} not found"
     )
+
+#---------------------------------------------------------
+#Stage 3 - Create: POST a new task
+#---------------------------------------------------------
+
+class TaskCreate(BaseModel):
+    title: str
+
+@app.post("/tasks", status_code=201)
+def create_task(task: TaskCreate):
+    if not task.title.strip():
+        raise HTTPException(
+            status_code = 400,
+            detail = "Title cannot be empty"
+        )
+
+    next_id = len(tasks) + 1
+
+    new_task = {
+        "id": next_id,
+        "title": task.title,
+        "done": False
+    }
+
+    tasks.append(new_task)
+
+    return new_task
