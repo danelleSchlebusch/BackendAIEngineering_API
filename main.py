@@ -71,7 +71,7 @@ app = FastAPI()
 #Stage 1: Your first real endpoint
 #------------------------------------------------------------------
 
-@app.get("/")
+@app.get("/", summary = "API Information")
 def root():
     return{
         "name": "Task API",
@@ -79,13 +79,13 @@ def root():
         "endpoints": ["/tasks"]
     }
 
-@app.get("/health")
+@app.get("/health", summary = "Health Check")
 def health():
     return{
         "status": "ok"
     }
 
-@app.get("/about")
+@app.get("/about", summary = "Personal Information")
 def about():
     return{
         "author": "Danelle",
@@ -114,15 +114,11 @@ tasks = [
     }
 ]
 
-@app.get("/")
-def read_root():
-    return {"message: Hello World"}
-
-@app.get("/tasks")
+@app.get("/tasks", summary = "Display Tasks")
 def get_tasks():
     return tasks
 
-@app.get("/tasks/{task_id}")
+@app.get("/tasks/{task_id}", summary = "Display a Task")
 def get_task(task_id: int):
     for task in tasks:
         if task["id"] == task_id:
@@ -140,7 +136,7 @@ def get_task(task_id: int):
 class TaskCreate(BaseModel):
     title: str
 
-@app.post("/tasks", status_code=201)
+@app.post("/tasks", status_code=201, summary = "Create a New Task")
 def create_task(task: TaskCreate):
     if not task.title.strip():
         raise HTTPException(
@@ -168,7 +164,7 @@ class TaskUpdate(BaseModel):
     title: str
     done: bool
 
-@app.put("/tasks/{task_id}")
+@app.put("/tasks/{task_id}", summary = "Update a Task")
 def update_task(task_id: int, updated_task: TaskUpdate):
     for task in tasks:
         if task["id"] == task_id:
@@ -182,7 +178,7 @@ def update_task(task_id: int, updated_task: TaskUpdate):
 
         raise HTTPException(status_code=404, detail="Task not found")
 
-@app.delete("/tasks/{task_id}", status_code=204)
+@app.delete("/tasks/{task_id}", status_code=204, summary = "Delete a Task")
 def delete_task(task_id: int):
     for task in tasks:
         if task["id"] == task_id:
