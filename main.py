@@ -143,18 +143,17 @@ def create_task(task: TaskCreate):
             detail = "Title cannot be empty"
         )
 
-    next_id = len(tasks) + 1
+    connection = get_db_connection()
 
-    new_task = {
-        "id": next_id,
-        "title": task.title,
-        "done": False
-    }
+    cursor = connection.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", (task.title, False))
 
-    tasks.append(new_task)
+    connection.commit()
 
-    return new_task
+    task_id = cursor.lastrowid
+    new_task = connection.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
 
+    connection.close()
+    return dict(new_task)
 #---------------------------------------------------------------
 #Stage 4 - Update and Delete
 #---------------------------------------------------------------
