@@ -167,6 +167,18 @@ This project demonstrates how to:
 - Publish a project to GitHub
 
 ---
+## Explored SQLite
+
+### SQL Query
+
+```sql
+DELETE FROM tasks 
+WHERE id = 5;
+```
+
+This query deleted the row from tasks where the id was equal to 5.
+
+---
 
 ## Author
 
