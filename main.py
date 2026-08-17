@@ -48,6 +48,15 @@ def init_db():
 init_db()
 
 #------------------------------------------------------------------
+#Opening the database
+#------------------------------------------------------------------
+
+def get_db_connection():
+    connection = sqlite3.connect("tasks.db")
+    connection.row_factory = sqlite3.Row
+    return connection
+
+#------------------------------------------------------------------
 #Stage 1: Your first real endpoint
 #------------------------------------------------------------------
 
@@ -96,18 +105,28 @@ tasks = [
 
 @app.get("/tasks", summary = "Display Tasks")
 def get_tasks():
-    return tasks
+    connection = get_db_connection()
+    tasks = connection.execute("SELECT * FROM tasks").fetchall()
+
+    connection.close()
+
+    return [dict(task) for task in tasks]
 
 @app.get("/tasks/{task_id}", summary = "Display a Task")
 def get_task(task_id: int):
-    for task in tasks:
-        if task["id"] == task_id:
-            return task
-        
-    raise HTTPException(
-        status_code = 404,
-        detail = f"Task {task_id} not found"
-    )
+    connection = get_db_connection()
+    task = connection.execute("SELECT * FROM tasks WHERE id = ?",
+                              (task_id,)).fetchone()
+
+    connection.close()
+
+    if task is None:
+        raise HTTPException(
+            status_code = 404,
+            detail = f"Task {task_id} not found"
+        )
+
+    return dict(task)
 
 #---------------------------------------------------------
 #Stage 3 - Create: POST a new task
