@@ -78,13 +78,45 @@ def about():
 #-----------------------------------------------------------------
 
 @app.get("/tasks", summary = "Display Tasks")
-def get_tasks():
+def get_tasks(search: str | None = None, done: bool | None = None, sort: str | None = None):
     connection = get_db_connection()
-    tasks = connection.execute("SELECT * FROM tasks").fetchall()
+
+    query = "SELECT * FROM tasks"
+    parameters = []
+
+    if search:
+        query += " WHERE title LIKE ?"
+        parameters.append(f"%{search}%")
+
+    if done is not None:
+        if search:
+            query += " AND done = ?"
+        else:
+            query += " WHERE done = ?"
+
+        parameters.append(done)
+
+    if sort == "title":
+        query += " ORDER BY title"
+
+    tasks = connection.execute(query, parameters).fetchall()
 
     connection.close()
 
     return [dict(task) for task in tasks]
+
+@app.get("/stats", summary = "Display Task Statistics")
+def get_stats():
+    connection = get_db_connection()
+
+    stats = connection.execute("SELECT " \
+    "COUNT(*) AS total, " \
+    "SUM(done) AS completed, " \
+    "COUNT(*) - SUM(done) AS pending " \
+    "FROM tasks").fetchone()
+
+    connection.close()
+    return dict(stats)
 
 @app.get("/tasks/{task_id}", summary = "Display a Task")
 def get_task(task_id: int):
