@@ -17,14 +17,6 @@ def init_db():
 
     cursor = connection.cursor()
 
-    # cursor.execute(""
-    # ""
-    # "CREATE TABLE IF NOT EXISTS tasks (" \
-    # "id INTEGER PIMARY KEY," \
-    # "title TEXT NOT NULL," \
-    # "done BOOLEAN NOT NULL" \
-    # ")")
-
     cursor.execute("CREATE TABLE IF NOT EXISTS tasks (" \
     "id INTEGER PRIMARY KEY," \
     "title TEXT NOT NULL," \
