@@ -1,71 +1,51 @@
-# from fastapi import FastAPI
-
-# app = FastAPI()
-
-
-# @app.get("/")
-# async def root():
-#     return {"message": "Hello World"}
-
-# # path parameters
-# @app.get("/items/{item_id}")
-# async def read_item(item_id):
-#     return {"item_id": item_id}
-
-
-# # path parameters with type
-# @app.get("/items/{item_id}")
-# async def read_item(item_id: int):
-#     return {"item_id": item_id}
-
-# #----------------------------------------------------------
-# # Create enum class
-# #----------------------------------------------------------
-# from enum import Enum
-
-# from fastapi import FastAPI
-
-
-# class ModelName(str, Enum):
-#     alexnet = "alexnet"
-#     resnet = "resnet"
-#     lenet = "lenet"
-
-
-# app = FastAPI()
-
-
-# @app.get("/models/{model_name}")
-# async def get_model(model_name: ModelName):
-#     if model_name is ModelName.alexnet:
-#         return {"model_name": model_name, "message": "Deep Learning FTW!"}
-
-#     if model_name.value == "lenet":
-#         return {"model_name": model_name, "message": "LeCNN all the images"}
-
-#     return {"model_name": model_name, "message": "Have some residuals"}
-
-# #-------------------------------------------------------------------
-# #Path Converter
-# #-------------------------------------------------------------------
-# # from fastapi import FastAPI
-
-# # app = FastAPI()
-
-# @app.get("/files/{file_path:path}")
-# async def read_file(file_path: str):
-#     return {"file_path": file_path}
-
-#------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------
 #Initialization
 #-------------------------------------------------------------------
 
 from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
+import sqlite3
 
 app = FastAPI()
 
+#------------------------------------------------------------------
+#Create Database
+#------------------------------------------------------------------
+
+def init_db():
+    connection = sqlite3.connect("tasks.db")
+
+    cursor = connection.cursor()
+
+    # cursor.execute(""
+    # ""
+    # "CREATE TABLE IF NOT EXISTS tasks (" \
+    # "id INTEGER PIMARY KEY," \
+    # "title TEXT NOT NULL," \
+    # "done BOOLEAN NOT NULL" \
+    # ")")
+
+    cursor.execute("CREATE TABLE IF NOT EXISTS tasks (" \
+    "id INTEGER PRIMARY KEY," \
+    "title TEXT NOT NULL," \
+    "done BOOLEAN NOT NULL)")
+
+    cursor.execute("SELECT COUNT(*) FROM tasks")
+
+    count = cursor.fetchone()[0]
+
+    if count == 0:
+        cursor.executemany("INSERT INTO tasks (id, title, done) VALUES (?, ?, ?)",
+                           [
+                               (1, "LearnFast API", False),
+                               (2, "Build CRUD API", False),
+                               (3, "Connect SQLite Database", False)
+                           ])
+        
+    connection.commit()
+    connection.close()
+
+init_db()
 
 #------------------------------------------------------------------
 #Stage 1: Your first real endpoint
