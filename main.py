@@ -4,21 +4,34 @@
 
 from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
-import sqlite3
+import os
+import psycopg
+from psycopg.rows import dict_row
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
+
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST"),
+    "port": os.getenv("DB_PORT"),
+    "dbname": os.getenv("DB_NAME"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD")
+}
 
 #------------------------------------------------------------------
 #Create Database
 #------------------------------------------------------------------
 
 def init_db():
-    connection = sqlite3.connect("tasks.db")
+    connection = psycopg.connect(**DB_CONFIG)
 
     cursor = connection.cursor()
 
     cursor.execute("CREATE TABLE IF NOT EXISTS tasks (" \
-    "id INTEGER PRIMARY KEY," \
+    "id SERIAL PRIMARY KEY," \
     "title TEXT NOT NULL," \
     "done BOOLEAN NOT NULL)")
 
@@ -27,11 +40,11 @@ def init_db():
     count = cursor.fetchone()[0]
 
     if count == 0:
-        cursor.executemany("INSERT INTO tasks (id, title, done) VALUES (?, ?, ?)",
+        cursor.executemany("INSERT INTO tasks (title, done) VALUES (%s, %s)",
                            [
-                               (1, "LearnFast API", False),
-                               (2, "Build CRUD API", False),
-                               (3, "Connect SQLite Database", False)
+                               ("LearnFast API", False),
+                               ("Build CRUD API", False),
+                               ("Connect SQLite Database", False)
                            ])
         
     connection.commit()
@@ -44,9 +57,7 @@ init_db()
 #------------------------------------------------------------------
 
 def get_db_connection():
-    connection = sqlite3.connect("tasks.db")
-    connection.row_factory = sqlite3.Row
-    return connection
+    return psycopg.connect(**DB_CONFIG, row_factory = dict_row)
 
 #------------------------------------------------------------------
 #Stage 1: Your first real endpoint
@@ -85,14 +96,14 @@ def get_tasks(search: str | None = None, done: bool | None = None, sort: str | N
     parameters = []
 
     if search:
-        query += " WHERE title LIKE ?"
+        query += " WHERE title LIKE %s"
         parameters.append(f"%{search}%")
 
     if done is not None:
         if search:
-            query += " AND done = ?"
+            query += " AND done = %s"
         else:
-            query += " WHERE done = ?"
+            query += " WHERE done = %s"
 
         parameters.append(done)
 
@@ -103,7 +114,7 @@ def get_tasks(search: str | None = None, done: bool | None = None, sort: str | N
 
     connection.close()
 
-    return [dict(task) for task in tasks]
+    return tasks
 
 @app.get("/stats", summary = "Display Task Statistics")
 def get_stats():
@@ -111,8 +122,8 @@ def get_stats():
 
     stats = connection.execute("SELECT " \
     "COUNT(*) AS total, " \
-    "SUM(done) AS completed, " \
-    "COUNT(*) - SUM(done) AS pending " \
+    "COUNT(*) FILTER (WHERE done = TRUE) AS completed, " \
+    "COUNT(*) FILTER (WHERE done = FALSE) AS pending " \
     "FROM tasks").fetchone()
 
     connection.close()
@@ -121,7 +132,7 @@ def get_stats():
 @app.get("/tasks/{task_id}", summary = "Display a Task")
 def get_task(task_id: int):
     connection = get_db_connection()
-    task = connection.execute("SELECT * FROM tasks WHERE id = ?",
+    task = connection.execute("SELECT * FROM tasks WHERE id = %s",
                               (task_id,)).fetchone()
 
     connection.close()
@@ -132,7 +143,7 @@ def get_task(task_id: int):
             detail = f"Task {task_id} not found"
         )
 
-    return dict(task)
+    return task
 
 #---------------------------------------------------------
 #Stage 3 - Create: POST a new task
@@ -151,15 +162,16 @@ def create_task(task: TaskCreate):
 
     connection = get_db_connection()
 
-    cursor = connection.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", (task.title, False))
+    cursor = connection.execute("INSERT INTO tasks (title, done) VALUES (%s, %s) RETURNING id", 
+                                (task.title, False))
 
     connection.commit()
 
-    task_id = cursor.lastrowid
-    new_task = connection.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    task_id = cursor.fetchone()["id"]
+    new_task = connection.execute("SELECT * FROM tasks WHERE id = %s", (task_id,)).fetchone()
 
     connection.close()
-    return dict(new_task)
+    return new_task
 #---------------------------------------------------------------
 #Stage 4 - Update and Delete
 #---------------------------------------------------------------
@@ -178,7 +190,7 @@ def update_task(task_id: int, updated_task: TaskUpdate):
 
     connection = get_db_connection()
 
-    cursor = connection.execute("UPDATE tasks SET title = ?, done = ? WHERE id = ?",
+    cursor = connection.execute("UPDATE tasks SET title = %s, done = %s WHERE id = %s",
                                 (updated_task.title, updated_task.done, task_id))
 
     if cursor.rowcount == 0:
@@ -190,17 +202,17 @@ def update_task(task_id: int, updated_task: TaskUpdate):
 
     connection.commit()
 
-    updated_task = connection.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    updated_task = connection.execute("SELECT * FROM tasks WHERE id = %s", (task_id,)).fetchone()
 
     connection.close()
-    return dict(updated_task)
+    return updated_task
 
 
 @app.delete("/tasks/{task_id}", status_code=204, summary = "Delete a Task")
 def delete_task(task_id: int):
     connection = get_db_connection()
 
-    cursor = connection.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    cursor = connection.execute("DELETE FROM tasks WHERE id = %s", (task_id,))
 
     if cursor.rowcount == 0:
         connection.close()
