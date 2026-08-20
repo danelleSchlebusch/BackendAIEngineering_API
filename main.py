@@ -4,60 +4,12 @@
 
 from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
-import os
-import psycopg
-from psycopg.rows import dict_row
-from dotenv import load_dotenv
 
-load_dotenv()
+from database import init_db, get_db_connection
 
 app = FastAPI()
 
-DB_CONFIG = {
-    "host": os.getenv("DB_HOST"),
-    "port": os.getenv("DB_PORT"),
-    "dbname": os.getenv("DB_NAME"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD")
-}
-
-#------------------------------------------------------------------
-#Create Database
-#------------------------------------------------------------------
-
-def init_db():
-    connection = psycopg.connect(**DB_CONFIG)
-
-    cursor = connection.cursor()
-
-    cursor.execute("CREATE TABLE IF NOT EXISTS tasks (" \
-    "id SERIAL PRIMARY KEY," \
-    "title TEXT NOT NULL," \
-    "done BOOLEAN NOT NULL)")
-
-    cursor.execute("SELECT COUNT(*) FROM tasks")
-
-    count = cursor.fetchone()[0]
-
-    if count == 0:
-        cursor.executemany("INSERT INTO tasks (title, done) VALUES (%s, %s)",
-                           [
-                               ("LearnFast API", False),
-                               ("Build CRUD API", False),
-                               ("Connect SQLite Database", False)
-                           ])
-        
-    connection.commit()
-    connection.close()
-
 init_db()
-
-#------------------------------------------------------------------
-#Opening the database
-#------------------------------------------------------------------
-
-def get_db_connection():
-    return psycopg.connect(**DB_CONFIG, row_factory = dict_row)
 
 #------------------------------------------------------------------
 #Stage 1: Your first real endpoint

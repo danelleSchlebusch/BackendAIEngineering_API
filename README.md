@@ -55,9 +55,13 @@ The tasks.db file is created in the main project directory:
 
 ```text
 .
+├── .venv/
+├── .env
+├── .env.example
 ├── main.py
 ├── README.md
 ├── .gitignore
+├── database.py
 └── tasks.db
 ```
 
@@ -255,9 +259,13 @@ This confirms that the database setup works automatically.
 
 ```text
 .
+├── .venv/
+├── .env
+├── .env.example
 ├── main.py
 ├── README.md
 ├── .gitignore
+├── database.py
 ├── database_screenshot.png
 └── tasks.db
 ```
