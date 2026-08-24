@@ -1,77 +1,87 @@
 # CRUD Task API
 
-A simple RESTful CRUD API built with **FastAPI, Python,** and **SQLite** as part of a Backend AI Engineering learning project.
+A RESTful CRUD API built with **FastAPI, Python, PostgreSQL, and Docker Compose** as part of a Backend AI Engineering learning project.
 
-This API demonstrates the basic **Create, Read, Update, and Delete (CRUD)** operations using a SQLite database.
+The API demonstrates the complete Create, Read, Update, and Delete (CRUD) cycle using PostgreSQL as the database and Docker Compose to run the API and database together.
 
 ---
 
 ## Features
 
-- Create a new task
-- Retrieve all tasks
-- Retrieve a task by ID
-- Update an existing task
-- Delete a task
-- Health check endpoint
-- Interactive Swagger API documentation
-- SQLite database integration
-- Automatic database and table creation
-- Three seeded tasks when the database is created for the first time
+* Create tasks
+* Retrieve all tasks
+* Retrieve a task by ID
+* Update tasks
+* Delete tasks
+* Search tasks by title
+* Filter tasks by completion status
+* Sort tasks by title
+* View task statistics
+* Health check endpoint
+* Interactive Swagger API documentation
+* PostgreSQL database integration
+* Automatic table creation
+* Three seeded tasks
+* Docker Compose one-command startup
 
 ---
 
 ## Technologies Used
 
-- Python 3.x
-- FastAPI
-- Uvicorn
-- Pydantic
-- SQLite
+* Python
+* FastAPI
+* Uvicorn
+* Pydantic
+* PostgreSQL
+* psycopg
+* Docker
+* Docker Compose
 
 ---
 
-## Database
-
-### Why SQLite?
-
-SQLite was chosen for this project because it is lightweight and does not require a separate database server or additional database setup.
-
-The database is stored as a single file called:
-
-```
-tasks.db
-```
-
-The application automatically creates the database when it starts if it does not already exist.
-
-It also automatically creates the tasks table and adds three example tasks when the table is empty.
-
-This means that someone can clone the repository and start the application without manually creating the database or table.
-
-### Database Location
-
-The tasks.db file is created in the main project directory:
+## Project Structure
 
 ```text
 .
-├── .venv/
 ├── .env
 ├── .env.example
-├── main.py
-├── README.md
 ├── .gitignore
+├── Dockerfile
+├── compose.yml
 ├── database.py
-└── tasks.db
+├── main.py
+└── README.md
 ```
 
-The database file is included in .gitignore, so it is not committed to GitHub.
+`.env` contains the local database connection configuration and is ignored by Git.
 
-This means that when someone clones the repository, their own tasks.db will be created automatically when they start the application.
+`.env.example` is committed to the repository as a template.
 
 ---
 
-## Installation
+## Environment Variables
+
+The application uses the following environment variable:
+
+| Variable       | Description                  | Example                                 |
+| -------------- | ---------------------------- | ---------------------------------------- |
+| `DATABASE_URL` | PostgreSQL connection string | `postgres://postgres:dev@db:5432/tasks` |
+
+The repository contains `.env.example` with the required configuration.
+
+Create your local `.env` file from the example before starting the application:
+
+```bash
+cp .env.example .env
+```
+
+**Do not commit `.env` to GitHub.** It may contain credentials.
+
+---
+
+## Run the Application
+
+The entire API and PostgreSQL database can be started with one command.
 
 ### 1. Clone the repository
 
@@ -79,142 +89,204 @@ This means that when someone clones the repository, their own tasks.db will be c
 git clone https://github.com/danelleSchlebusch/BackendAIEngineering_API.git
 ```
 
-### 2. Navigate to the project folder
+### 2. Navigate to the project
 
 ```bash
-cd BackendAIEngineering_API.git
+cd BackendAIEngineering_API
 ```
 
-### 3. Install the required packages
+### 3. Create the environment file
 
 ```bash
-pip install fastapi uvicorn
+cp .env.example .env
 ```
 
-### 4. Start the API
+### 4. Start the complete stack
 
 ```bash
-uvicorn main:app --reload
+docker compose up
 ```
-The application will automatically create tasks.db, create the tasks table, and add the three seeded tasks if the database does not already contain any tasks.
 
-You should see output similar to:
+Docker Compose starts:
+
+* The FastAPI application
+* The PostgreSQL database
+* The database health check
+* The API after PostgreSQL is ready
+
+No manual database or table creation is required.
+
+The API is available at:
 
 ```text
-INFO:     Uvicorn running on http://127.0.0.1:8000
+http://localhost:3000
 ```
+
+---
+
+## Clean Clone Checkpoint
+
+A fresh clone should work without any manual database setup.
+
+Run:
+
+```bash
+cp .env.example .env
+docker compose up
+```
+
+Once the containers are running, test:
+
+```bash
+curl -i http://localhost:3000/tasks
+```
+
+The API should return the three seeded tasks:
+
+```json
+[
+  {
+    "id": 1,
+    "title": "Learn FastAPI",
+    "done": false
+  },
+  {
+    "id": 2,
+    "title": "Build CRUD API",
+    "done": false
+  },
+  {
+    "id": 3,
+    "title": "Connect PostgreSQL Database",
+    "done": false
+  }
+]
+```
+
+This confirms that a stranger can clone the repository, configure `.env`, run `docker compose up`, and use the API without manually setting up PostgreSQL.
 
 ---
 
 ## API Documentation
 
-Once the server is running, open your browser and navigate to:
+### Swagger UI
 
-Swagger UI
+Once the application is running:
 
+```text
+http://localhost:3000/docs
 ```
-http://127.0.0.1:8000/docs
-```
 
-Alternative ReDoc documentation
+### ReDoc
 
-```
-http://127.0.0.1:8000/redoc
+```text
+http://localhost:3000/redoc
 ```
 
 ---
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/` | Returns API information |
-| GET | `/health` | Health check |
-| GET | `/about` | Returns author and course information |
-| GET | `/tasks` | Retrieve all tasks |
-| GET | `/tasks/{task_id}` | Retrieve a task by ID |
-| POST | `/tasks` | Create a new task |
-| PUT | `/tasks/{task_id}` | Update an existing task |
-| DELETE | `/tasks/{task_id}` | Delete a task |
+| Method | Endpoint           | Description                           |
+| ------ | ------------------ | -------------------------------------- |
+| GET    | `/`                | Returns API information               |
+| GET    | `/health`          | Health check                          |
+| GET    | `/about`           | Returns author and course information |
+| GET    | `/tasks`           | Retrieve tasks                        |
+| GET    | `/tasks/{task_id}` | Retrieve a task by ID                 |
+| GET    | `/stats`           | Retrieve task statistics              |
+| POST   | `/tasks`           | Create a new task                     |
+| PUT    | `/tasks/{task_id}` | Update an existing task               |
+| DELETE | `/tasks/{task_id}` | Delete a task                         |
+
+### GET `/tasks` Query Parameters
+
+The `/tasks` endpoint supports optional query parameters:
+
+| Parameter | Description                 | Example                 |
+| --------- | ---------------------------- | ------------------------ |
+| `search`  | Search task titles          | `/tasks?search=FastAPI` |
+| `done`    | Filter by completion status | `/tasks?done=false`     |
+| `sort`    | Sort tasks by title         | `/tasks?sort=title`     |
+
+Parameters can also be combined:
+
+```text
+/tasks?search=API&done=false&sort=title
+```
 
 ---
 
-## Example Task
+## Example Request
 
-```json
-{
-  "id": 1,
-  "title": "Learn FastAPI",
-  "completed": false
-}
+The following request retrieves all tasks:
+
+```bash
+curl -i http://localhost:3000/tasks
 ```
 
-The application initially seeds the database with:
+Example response:
 
-1. LearnFast API
+```text
+HTTP/1.1 200 OK
+content-type: application/json
+
+[{"id":1,"title":"Learn FastAPI","done":false},{"id":2,"title":"Build CRUD API","done":false},{"id":3,"title":"Connect PostgreSQL Database","done":false}]
+```
+
+---
+
+## Database
+
+The application uses **PostgreSQL** running as a Docker Compose service.
+
+The database service is named:
+
+```text
+db
+```
+
+The PostgreSQL database is named:
+
+```text
+tasks
+```
+
+The application waits for PostgreSQL to become healthy before starting the API.
+
+The `tasks` table is created automatically by the application when it starts.
+
+The table structure is:
+
+| Column  | Type    | Description       |
+| ------- | ------- | ------------------ |
+| `id`    | SERIAL  | Primary key       |
+| `title` | TEXT    | Task title        |
+| `done`  | BOOLEAN | Completion status |
+
+---
+
+## Seeded Data
+
+When the `tasks` table is empty, the application automatically creates three tasks:
+
+1. Learn FastAPI
 2. Build CRUD API
-3. Connect SQLite Database
+3. Connect PostgreSQL Database
 
----
+The seeded data can be verified using PostgreSQL:
 
-## Example Response
-
-### GET `/tasks`
-
-```json
-[ 
-  { 
-    "id": 1, 
-    "title": "LearnFast API", 
-    "done": false 
-  }, 
-  { 
-    "id": 2, 
-    "title": "Build CRUD API", 
-    "done": false 
-  }, 
-  { 
-    "id": 3, 
-    "title": "Connect SQLite Database", 
-    "done": false 
-  } 
-]
+```bash
+docker compose exec db psql -U postgres -d tasks
 ```
 
----
-
-## Database Screenshot
-
-The SQLite database can be viewed using DB Browser for SQLite.
-
-The screenshot below shows the tasks table and its seeded tasks.
-
-Save the screenshot in the project directory, for example:
-
-```
-database_screenshot.jpg
-```
-
-Then display it here:
-
-```markdown
-![SQLite Database](database_screenshot.jpg)
-```
-
----
-
-## Example SQL Query
-
-The following SQL query was used during Stage 4 to delete a task with a specific ID:
+Then:
 
 ```sql
-DELETE FROM tasks 
-WHERE id = 5;
+\dt
 ```
 
-This query deleted the row from tasks table where the id was equal to 5.
-
-Another useful query for viewing all tasks is:
+and:
 
 ```sql
 SELECT * FROM tasks;
@@ -222,92 +294,65 @@ SELECT * FROM tasks;
 
 ---
 
-## Automatic Database Creation
+## Database Screenshot
 
-The database is created automatically when main.py starts.
+The following screenshot shows the PostgreSQL `tasks` table and the seeded data using `psql`.
 
-The application:
+![PostgreSQL Database](database.jpg)
 
-1. Connects to tasks.db.
-2. Creates the tasks table if it does not already exist.
-3. Checks whether the table contains any tasks.
-4. Adds three seeded tasks if the table is empty.
-5. Commits the changes and closes the database connection.
-
-This allows the project to work from a clean clone without requiring manual database setup.
-
-## Clean Clone Test
-
-To verify that the database is created automatically:
-
-1. Delete tasks.db from the project directory.
-2. Start the application using:
-```bash
-uvicorn main:app --reload
-```
-3. The application should automatically recreate tasks.db.
-4. Open:
-```
-http://127.0.0.1:8000/tasks
-```
-5. The three seeded tasks should be returned.
-
-This confirms that the database setup works automatically.
 ---
 
-## Project Structure
+## Validation
+
+The API validates task titles when creating and updating tasks.
+
+An empty or whitespace-only title returns:
 
 ```text
-.
-├── .venv/
-├── .env
-├── .env.example
-├── main.py
-├── README.md
-├── .gitignore
-├── database.py
-├── database_screenshot.png
-└── tasks.db
+HTTP 400 Bad Request
 ```
+
+Requests for a task that does not exist return:
 
 ```text
-tasks.db is created automatically and is ignored by Git, so it will not be included in the GitHub repository.
-```
----
-
-## Swagger Screenshot
-
-After running the application, take a screenshot of the Swagger UI (`/docs`) and save it inside your project, for example:
-
-```
-images_swagger.jpg
+HTTP 404 Not Found
 ```
 
-Then display it below.
+Successful task creation returns:
 
-```markdown
-![Swagger UI](images_swagger.jpg)
+```text
+HTTP 201 Created
 ```
+
+Successful deletion returns:
+
+```text
+HTTP 204 No Content
+```
+
 ---
 
 ## Learning Objectives
 
 This project demonstrates how to:
 
-- Build REST APIs using FastAPI
-- Create API endpoints
-- Handle path parameters
-- Use Pydantic models for request validation
-- Return JSON responses
-- Raise HTTP exceptions
-- Perform Create, Read, Update, and Delete operations
-- Connect FastAPI to a SQLite database
-- Create a SQLite database automatically
-- Seed a database with initial data
-- Execute SQL queries
-- Test APIs using Swagger UI
-- View a SQLite database using DB Browser for SQLite
-- Publish a project to GitHub
+* Build REST APIs using FastAPI
+* Create GET, POST, PUT, and DELETE endpoints
+* Use path and query parameters
+* Use Pydantic models for request validation
+* Return JSON responses
+* Raise HTTP exceptions
+* Perform CRUD operations
+* Write SQL queries
+* Connect FastAPI to PostgreSQL
+* Use psycopg to communicate with PostgreSQL
+* Run an API and database using Docker Compose
+* Use environment variables for database configuration
+* Seed a database automatically
+* Test APIs using `curl`
+* Test APIs using Swagger UI
+* Verify PostgreSQL data using `psql`
+* Publish a runnable project to GitHub
 
 ---
 
