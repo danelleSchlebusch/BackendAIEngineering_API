@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from supabase import create_client, Client
 
@@ -67,4 +68,41 @@ def login(data: AuthRequest):
     return{
         "access_token": response.session.access_token,
         "refresh_token": response.session.refresh_token
+    }
+
+#--------------------------------------------------------------------
+#Public Route
+#--------------------------------------------------------------------
+
+@app.get("/public/info")
+def public_info():
+    return{
+        "message": "Welcome stranger! This info is public."
+    }
+
+#------------------------------------------------------------------
+#Protected Route
+#------------------------------------------------------------------
+
+@app.get("/protected/profile")
+def protected_profile(request: Request):
+    authorization = request.headers.get("Authorization")
+
+    if not authorization or not authorization.startswith("Bearer "):
+        return JSONResponse(
+            status_code=401,
+            content={"error": "Access token required"}
+        )
+
+    token = authorization[7:]
+
+    if not token:
+        return JSONResponse(
+            status_code=401,
+            content={"error": "Access token required"}
+        )
+
+    return{
+        "message": "Protected Profile",
+        "token": token
     }
